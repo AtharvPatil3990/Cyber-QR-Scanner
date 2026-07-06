@@ -1,0 +1,64 @@
+package com.android.cyberqrscanner.navigation
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AutoAwesomeMotion
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavController
+
+@Composable
+fun BottomNavBar(navController: NavController, currItem: String) {
+
+    val navItemsList = listOf(
+        NavItem("Scanner", Icons.Default.CameraAlt, NavRoutes.ScannerScreen),
+        NavItem("Generator", Icons.Outlined.AutoAwesomeMotion, NavRoutes.GeneratorScreen),
+        NavItem("Settings", Icons.Default.Settings, NavRoutes.SettingsScreen)
+    )
+
+    BottomAppBar() {
+        navItemsList.forEach { item ->
+
+            NavigationBarItem(
+                selected = item.label == currItem,
+                onClick = {
+                    navController.navigate(item.route){
+                        popUpTo(navController.graph.startDestinationId){
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label
+                    )
+                },
+                label = { Text(text = item.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                alwaysShowLabel = false
+            )
+        }
+    }
+}
+
+data class NavItem(
+    val label: String,
+    val icon: ImageVector,
+    val route: NavRoutes
+)
