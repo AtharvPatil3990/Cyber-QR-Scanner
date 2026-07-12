@@ -79,4 +79,7 @@ dependencies {
 
 //    Extra Icons
     implementation("androidx.compose.material:material-icons-extended")
+
+//    ML kit barcode scanner
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 }
