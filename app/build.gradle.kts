@@ -82,4 +82,8 @@ dependencies {
 
 //    ML kit barcode scanner
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+//    Viewmodel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+
 }

@@ -1,5 +1,6 @@
 package com.android.cyberqrscanner.navigation
 
+import android.graphics.Camera
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.android.cyberqrscanner.ui.screens.CameraScannerUI
 import com.android.cyberqrscanner.ui.screens.GeneratorScreenUI
 import com.android.cyberqrscanner.ui.screens.ScannerScreenUI
 import com.android.cyberqrscanner.ui.screens.SettingsScreenUI
@@ -35,6 +37,10 @@ fun NavGraph() {
 
         composable<NavRoutes.SettingsScreen> {
             SettingsScreenUI(navController = navController)
+        }
+
+        composable<NavRoutes.CameraScanner> {
+            CameraScannerUI(navController = navController)
         }
     }
 }

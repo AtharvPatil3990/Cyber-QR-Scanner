@@ -13,4 +13,6 @@ sealed class NavRoutes {
     @Serializable
     data object SettingsScreen: NavRoutes()
 
+    @Serializable
+    data object CameraScanner: NavRoutes()
 }
