@@ -23,7 +23,9 @@ fun BottomNavBar(navController: NavController, currItem: String) {
         NavItem("Settings", Icons.Default.Settings, NavRoutes.SettingsScreen)
     )
 
-    BottomAppBar() {
+    BottomAppBar(
+        containerColor = MaterialTheme.colorScheme.onPrimary
+    ) {
         navItemsList.forEach { item ->
 
             NavigationBarItem(
@@ -50,8 +52,7 @@ fun BottomNavBar(navController: NavController, currItem: String) {
                     selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                alwaysShowLabel = false
+                )
             )
         }
     }

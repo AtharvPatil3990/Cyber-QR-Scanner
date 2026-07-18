@@ -24,7 +24,6 @@ class MainActivity : ComponentActivity() {
             CyberQRScannerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
                 ) {
                     NavGraph()
                 }
