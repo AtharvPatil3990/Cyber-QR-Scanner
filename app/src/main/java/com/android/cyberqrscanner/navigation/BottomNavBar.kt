@@ -12,6 +12,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 @Composable
@@ -24,7 +26,8 @@ fun BottomNavBar(navController: NavController, currItem: String) {
     )
 
     BottomAppBar(
-        containerColor = MaterialTheme.colorScheme.onPrimary
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp
     ) {
         navItemsList.forEach { item ->
 
@@ -45,7 +48,12 @@ fun BottomNavBar(navController: NavController, currItem: String) {
                         contentDescription = item.label
                     )
                 },
-                label = { Text(text = item.label) },
+                label = {
+                    Text(
+                        text = item.label,
+                        fontWeight = if(currItem == item.label) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
                 colors = NavigationBarItemDefaults.colors(
                     indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
                     selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,

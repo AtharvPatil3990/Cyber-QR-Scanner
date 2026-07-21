@@ -1,12 +1,6 @@
 package com.android.cyberqrscanner.ui.screens.scanner
 
-import android.Manifest
-import android.app.Activity
-import android.app.Application
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
+import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,12 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +34,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,8 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.android.cyberqrscanner.MyApplication
@@ -62,43 +56,36 @@ import com.android.cyberqrscanner.navigation.BottomNavBar
 import com.android.cyberqrscanner.navigation.NavRoutes
 import com.android.cyberqrscanner.ui.factories.ScannerViewModelFactory
 import com.android.cyberqrscanner.ui.viewmodel.ScannerScreenViewModel
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter.ofPattern
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScannerScreenUI(navController: NavController) {
+    fun ScannerScreenUI(navController: NavController) {
 
     val context = LocalContext.current
     val appContext = context.applicationContext as MyApplication
     val viewModel: ScannerScreenViewModel = viewModel(factory = ScannerViewModelFactory(appContext.scanRepo))
 
-    val activity = context as? Activity
+    val scanner = remember {
+        GmsBarcodeScanning
+            .getClient(
+                context,
+                GmsBarcodeScannerOptions.Builder().enableAutoZoom().build()
+            )
+    }
+
+//    ScanHistory List
+    val scansList by viewModel.scanHistoryState.collectAsStateWithLifecycle()
 
 //    For bottom sheet
     var showBottomsheet by remember{ mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
-
-
-//    Camera Permissio Launcher
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted)
-                navController.navigate(NavRoutes.CameraScanner)
-            else {
-                val shouldShowPermissionRational =
-                    activity?.let {
-                        ActivityCompat.shouldShowRequestPermissionRationale(
-                            it,
-                            Manifest.permission.CAMERA
-                        )
-                    } ?: false
-
-                if (!shouldShowPermissionRational)
-                    viewModel.onCameraPermissionRationalShown()
-            }
-        }
-    )
 
 //    Photo Picker Launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -121,8 +108,8 @@ fun ScannerScreenUI(navController: NavController) {
     LaunchedEffect(viewModel.navigateToResultId) {
         viewModel.navigateToResultId?.let { scanId ->
             navController.navigate(NavRoutes.ScannedResultScreen(scanId))
+            viewModel.onResultNavigationHandled()
         }
-        viewModel.onResultNavigationHandled()
     }
 
 //    Listen for errors from viewModel
@@ -130,45 +117,6 @@ fun ScannerScreenUI(navController: NavController) {
         viewModel.uiEvent.collect{ message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
-    }
-
-//    Open Settings dialog box
-    if (viewModel.showCameraPermissionRational) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onCameraPermissionRationalDismissed() },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.onCameraPermissionRationalDismissed()
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", context.packageName, null)
-                        ).also { context.startActivity(it) }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) { Text("Settings", fontWeight = FontWeight.Medium) }
-            },
-            dismissButton = {
-                FilledTonalButton(
-                    onClick = { viewModel.onCameraPermissionRationalDismissed() }
-                ) { Text("Cancel") }
-            },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.CameraAlt,
-                    contentDescription = "Camera Icon"
-                )
-            },
-            title = { Text("Camera Permission is required!") },
-            text = { Text("To scan QR code camera permission is required, click 'Settings' to grant the permission.") },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconContentColor = MaterialTheme.colorScheme.secondary
-        )
     }
 
     if(showBottomsheet){
@@ -184,18 +132,24 @@ fun ScannerScreenUI(navController: NavController) {
                 Button(
                     onClick = {
                         showBottomsheet = false
-
-                        if (
-                            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                            == PackageManager.PERMISSION_GRANTED
-                        )
-                            navController.navigate(NavRoutes.CameraScanner)
-                        else
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        scanner.startScan()
+                            .addOnSuccessListener { barcode ->
+                                if(barcode != null)
+                                    viewModel.insertBarcodeInDB(barcode)
+                                else
+                                    viewModel.showError("Couldn't detect QR, try again!")
+                            }
+                            .addOnFailureListener {
+                                viewModel.showError("An Error occurred, please try again!")
+                            }
+                            .addOnCanceledListener {
+                                Toast.makeText(context, "Scan Cancelled.", Toast.LENGTH_LONG).show()
+                            }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(14.dp),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors()
                 ) {
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
@@ -213,7 +167,8 @@ fun ScannerScreenUI(navController: NavController) {
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors()
                 ) {
                     Icon(
                         imageVector = Icons.Default.Image,
@@ -242,7 +197,10 @@ fun ScannerScreenUI(navController: NavController) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = "Scanner", fontWeight = FontWeight.Medium)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         floatingActionButton = {
@@ -250,15 +208,15 @@ fun ScannerScreenUI(navController: NavController) {
                 onClick = {
                     showBottomsheet = true
                 },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                containerColor = MaterialTheme.colorScheme.onPrimaryContainer, // Very dark/white block
+                contentColor = MaterialTheme.colorScheme.primaryContainer,     // Inner text color,
                 text = { Text("Scan QR") },
                 icon = {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "QR Code Scanner"
                     )
-                }
+                },
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -274,17 +232,35 @@ fun ScannerScreenUI(navController: NavController) {
             Text(
                 text = "Recent Scan's",
                 fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onBackground
             )
+
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-
+                items(items = scansList) { scan ->
+                    ScanHistoryItem(
+                        onItemClick = {},
+                        onCopyClick = {},
+                        onDeleteClick = {},
+                        timestamp = scan.timestamp.toFormattedDate(),
+                        qrType = scan.qrType,
+                        rawValue = scan.rawValue
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
 
     }
+}
+fun Long.toFormattedDate(): String {
+    val instant = Instant.ofEpochMilli(this)
+    val formatter = ofPattern("MMM dd, yyyy • hh:mm a", Locale.getDefault())
+        .withZone(ZoneId.systemDefault()) // Converts to user's local phone timezone
+
+    return formatter.format(instant)
 }

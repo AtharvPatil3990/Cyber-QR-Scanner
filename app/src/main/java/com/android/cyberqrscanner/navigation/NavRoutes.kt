@@ -14,8 +14,5 @@ sealed class NavRoutes {
     data object SettingsScreen: NavRoutes()
 
     @Serializable
-    data object CameraScanner: NavRoutes()
-
-    @Serializable
     data class ScannedResultScreen(val scanId: Long): NavRoutes()
 }

@@ -89,15 +89,6 @@ dependencies {
 //    Viewmodel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
 
-//    CameraX
-    // The following line is optional, as the core library is included indirectly by camera-camera2
-    implementation("androidx.camera:camera-core:1.6.1")
-    implementation("androidx.camera:camera-camera2:1.6.1")
-    // If you want to additionally use the CameraX Lifecycle library
-    implementation("androidx.camera:camera-lifecycle:1.6.1")
-    // If you want to additionally use the CameraX View class
-    implementation("androidx.camera:camera-view:1.6.1")
-    // If you want to additionally add CameraX ML Kit Vision Integration
-    implementation("androidx.camera:camera-mlkit-vision:1.6.1")
-    //
+//    Google's GmsBarcodeScanner
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 }

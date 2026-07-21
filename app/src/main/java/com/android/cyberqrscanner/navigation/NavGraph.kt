@@ -7,7 +7,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.android.cyberqrscanner.ui.screens.scanner.CameraScannerUI
 import com.android.cyberqrscanner.ui.screens.GeneratorScreenUI
 import com.android.cyberqrscanner.ui.screens.ScannedResultScreen
 import com.android.cyberqrscanner.ui.screens.scanner.ScannerScreenUI
@@ -33,10 +32,6 @@ fun NavGraph() {
 
         composable<NavRoutes.SettingsScreen> {
             SettingsScreenUI(navController = navController)
-        }
-
-        composable<NavRoutes.CameraScanner> {
-            CameraScannerUI(navController = navController)
         }
 
         composable<NavRoutes.ScannedResultScreen> { backStackEntry ->

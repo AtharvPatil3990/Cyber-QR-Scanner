@@ -10,10 +10,13 @@ import com.android.cyberqrscanner.data.entities.ScanQrEntity
 import com.android.cyberqrscanner.repository.ScanRepository
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -27,17 +30,11 @@ class ScannerScreenViewModel(
     var navigateToResultId by mutableStateOf<Long?>(null)
         private set
 
-//    show open settings option to get camera permission if denied
-    var showCameraPermissionRational by mutableStateOf(false)
-        private set
-
-    fun onCameraPermissionRationalShown(){
-        showCameraPermissionRational = true
-    }
-
-    fun onCameraPermissionRationalDismissed(){
-        showCameraPermissionRational = false
-    }
+    val scanHistoryState = scanRepository.getScanHist().stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun onResultNavigationHandled(){
         navigateToResultId = null
@@ -51,27 +48,9 @@ class ScannerScreenViewModel(
             .addOnSuccessListener { barcodes ->
                 if(barcodes.isNotEmpty()){
                     val barcode = barcodes.first() ?: return@addOnSuccessListener
-                    val rawValue = barcode.rawValue ?: return@addOnSuccessListener
 
-                    val qrType = scanRepository.extractQrType(barcode.valueType)
-                    val barcodeData = scanRepository.extractBarcodeData(barcode)
+                    insertBarcodeInDB(barcode)
 
-                    val newScan = ScanQrEntity(
-                        rawValue = rawValue,
-                        qrType = qrType,
-                        timestamp = System.currentTimeMillis(),
-                        isFavourite = false,
-                        parsedData = barcodeData,
-                        customType = ""
-                    )
-
-                    viewModelScope.launch(Dispatchers.IO) {
-                        val newScanId = scanRepository.insertScannedQr(newScan)
-
-                        withContext(Dispatchers.Main){
-                            navigateToResultId = newScanId
-                        }
-                    }
                 }
             }
             .addOnFailureListener {
@@ -79,6 +58,30 @@ class ScannerScreenViewModel(
                     showError("Failed to recognize QR in image.")
                 }
             }
+    }
+
+    fun insertBarcodeInDB(barcode: Barcode){
+        val rawValue = barcode.rawValue ?: return
+
+        val qrType = scanRepository.extractQrType(barcode.valueType)
+        val barcodeData = scanRepository.extractBarcodeData(barcode)
+
+        val newScan = ScanQrEntity(
+            rawValue = rawValue,
+            qrType = qrType,
+            timestamp = System.currentTimeMillis(),
+            isFavourite = false,
+            parsedData = barcodeData,
+            customType = ""
+        )
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val newScanId = scanRepository.insertScannedQr(newScan)
+
+            withContext(Dispatchers.Main){
+                navigateToResultId = newScanId
+            }
+        }
     }
 
     fun showError(message: String) {

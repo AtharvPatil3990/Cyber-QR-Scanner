@@ -1,8 +1,11 @@
 package com.android.cyberqrscanner.repository
 
+import androidx.compose.material3.Badge
+import com.android.cyberqrscanner.data.QrType
 import com.android.cyberqrscanner.data.dao.ScanHistoryDao
 import com.android.cyberqrscanner.data.entities.ScanQrEntity
 import com.google.mlkit.vision.barcode.common.Barcode
+import kotlinx.coroutines.flow.Flow
 
 class ScanRepository(
     private val scanDao: ScanHistoryDao
@@ -12,20 +15,12 @@ class ScanRepository(
         return scanDao.insertScanQr(qr = qr)
     }
 
-    fun extractQrType(valueType: Int): String {
-        return when(valueType){
-            Barcode.TYPE_URL -> "URL"
-            Barcode.TYPE_WIFI -> "WiFi"
-            Barcode.TYPE_CONTACT_INFO -> "Contact"
-            Barcode.TYPE_EMAIL -> "Email"
-            Barcode.TYPE_PHONE -> "Phone"
-            Barcode.TYPE_SMS -> "SMS"
-            Barcode.TYPE_GEO -> "Location"
-            Barcode.TYPE_CALENDAR_EVENT -> "Event"
-            Barcode.TYPE_DRIVER_LICENSE -> "ID Card"  // <-- ADDED FOR PDF417
-            Barcode.TYPE_PRODUCT -> "Product"         // <-- ADDED FOR RETAIL BARCODES
-            else -> "Text"
-        }
+    fun getScanHist(): Flow<List<ScanQrEntity>>{
+        return scanDao.getScanHistory()
+    }
+
+    fun extractQrType(valueType: Int): QrType {
+        return QrType.toEnum(type = valueType)
     }
 
     fun extractBarcodeData(barcode: Barcode): Map<String, String> {
