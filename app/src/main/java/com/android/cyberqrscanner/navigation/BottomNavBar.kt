@@ -26,7 +26,8 @@ fun BottomNavBar(navController: NavController, currItem: String) {
     )
 
     BottomAppBar(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
         tonalElevation = 0.dp
     ) {
         navItemsList.forEach { item ->
@@ -55,11 +56,16 @@ fun BottomNavBar(navController: NavController, currItem: String) {
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    // ACTIVE STATE: The brand dictates "Primary" is used for active states.
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onTertiary,
+
+                    // UNSELECTED STATE: Must contrast against the dark Tertiary background.
+                    // We use onTertiary (White) for contrast, and Compose automatically
+                    // applies a standard 60% alpha to unselected items to dim them.
+                    unselectedIconColor = MaterialTheme.colorScheme.onTertiary,
+                    unselectedTextColor = MaterialTheme.colorScheme.onTertiary
                 )
             )
         }

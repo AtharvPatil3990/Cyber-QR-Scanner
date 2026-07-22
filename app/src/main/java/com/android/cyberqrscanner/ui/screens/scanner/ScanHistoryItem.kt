@@ -1,15 +1,17 @@
 package com.android.cyberqrscanner.ui.screens.scanner
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
@@ -22,22 +24,22 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.cyberqrscanner.data.QrType
-
 
 val QrType.icon: ImageVector
     get() = when (this) {
@@ -59,82 +61,86 @@ val QrType.icon: ImageVector
 @Composable
 fun ScanHistoryItem(
     onItemClick: () -> Unit,
-    onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
     timestamp: String,
     qrType: QrType,
     rawValue: String
 ) {
-    ListItem(
-        modifier = Modifier.clickable(
-            onClick = onItemClick
-        ),
-        colors = ListItemDefaults.colors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent
-        ),
-        overlineContent = {
-            Text(
-                text = qrType.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        leadingContent = {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clip(RoundedCornerShape(16.dp))
-            ) {
-                Icon(
-                    imageVector = qrType.icon,
-                    contentDescription = "Icon of qr type",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                onClick = onItemClick
+            ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        ListItem(
+            modifier = Modifier.fillMaxSize(),
+            colors = ListItemDefaults.colors(
+                containerColor = androidx.compose.ui.graphics.Color.Transparent
+            ),
+            overlineContent = {
+                Text(
+                    text = qrType.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
-            }
-        },
-        headlineContent = {
-            Text(
-                text = rawValue,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1, // Crucial: prevents layout breaking on huge QR payloads
-                overflow = TextOverflow.Ellipsis // Adds the "..." at the end
-            )
-        },
-        supportingContent = {
-            Text(
-                text = timestamp,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        },
-        trailingContent = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onCopyClick
+            },
+            leadingContent = {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        imageVector = qrType.icon,
+                        contentDescription = "Icon of qr type",
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
-                IconButton(
-                    onClick = onDeleteClick,
+            },
+            headlineContent = {
+                Text(
+                    text = rawValue,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1, // Crucial: prevents layout breaking on huge QR payloads
+                    overflow = TextOverflow.Ellipsis // Adds the "..." at the end
+                )
+            },
+            supportingContent = {
+                Text(
+                    text = timestamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            trailingContent = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                    IconButton(
+                        onClick = onDeleteClick,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.errorContainer
+                        )
+                    }
                 }
             }
-        }
-    )
+        )
+    }
 }

@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,8 +33,10 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -60,7 +64,9 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ofPattern
 import java.util.Locale
 
@@ -70,7 +76,8 @@ import java.util.Locale
 
     val context = LocalContext.current
     val appContext = context.applicationContext as MyApplication
-    val viewModel: ScannerScreenViewModel = viewModel(factory = ScannerViewModelFactory(appContext.scanRepo))
+    val viewModel: ScannerScreenViewModel =
+        viewModel(factory = ScannerViewModelFactory(appContext.scanRepo))
 
     val scanner = remember {
         GmsBarcodeScanning
@@ -80,23 +87,25 @@ import java.util.Locale
             )
     }
 
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
+
 //    ScanHistory List
     val scansList by viewModel.scanHistoryState.collectAsStateWithLifecycle()
 
 //    For bottom sheet
-    var showBottomsheet by remember{ mutableStateOf(false) }
+    var showBottomsheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
 //    Photo Picker Launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            if(uri != null) {
+            if (uri != null) {
                 try {
                     viewModel.processImage(
                         InputImage.fromFilePath(context, uri)
                     )
-                }catch (e: Exception){
+                } catch (e: Exception) {
                     Toast.makeText(context, "Failed to load image file", Toast.LENGTH_LONG).show()
                     Log.e("Error", e.message ?: "Error while fetching image")
                 }
@@ -114,18 +123,55 @@ import java.util.Locale
 
 //    Listen for errors from viewModel
     LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect{ message ->
+        viewModel.uiEvent.collect { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
-    if(showBottomsheet){
+    if(showClearHistoryDialog){
+        AlertDialog(
+            onDismissRequest = { showClearHistoryDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearHistoryDialog = false
+
+                        viewModel.clearAllHistory()
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Delete", fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showClearHistoryDialog = false },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) { Text("Cancel") }
+            },
+            title = { Text("Clear All Scan History?", fontWeight = FontWeight.Bold) },
+            text = { Text("This will permanently delete all scanned items. This action cannot be undone.") },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            iconContentColor = MaterialTheme.colorScheme.secondary
+        )
+    }
+
+    if (showBottomsheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomsheet = false },
             sheetState = sheetState
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -134,7 +180,7 @@ import java.util.Locale
                         showBottomsheet = false
                         scanner.startScan()
                             .addOnSuccessListener { barcode ->
-                                if(barcode != null)
+                                if (barcode != null)
                                     viewModel.insertBarcodeInDB(barcode)
                                 else
                                     viewModel.showError("Couldn't detect QR, try again!")
@@ -192,14 +238,16 @@ import java.util.Locale
                     ) {
                         Icon(
                             imageVector = Icons.Default.QrCodeScanner,
-                            contentDescription = "ScannerIcon"
+                            contentDescription = "ScannerIcon",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Scanner", fontWeight = FontWeight.Medium)
+                        Text(text = "Scanner", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
@@ -208,9 +256,9 @@ import java.util.Locale
                 onClick = {
                     showBottomsheet = true
                 },
-                containerColor = MaterialTheme.colorScheme.onPrimaryContainer, // Very dark/white block
-                contentColor = MaterialTheme.colorScheme.primaryContainer,     // Inner text color,
-                text = { Text("Scan QR") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,    // Inner text color,
+                text = { Text("Scan") },
                 icon = {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
@@ -226,41 +274,68 @@ import java.util.Locale
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(top = 10.dp, start = 12.dp, end = 12.dp)
                 .fillMaxSize()
         ) {
-            Text(
-                text = "Recent Scan's",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
 
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
+//            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                items(items = scansList) { scan ->
-                    ScanHistoryItem(
-                        onItemClick = {},
-                        onCopyClick = {},
-                        onDeleteClick = {},
-                        timestamp = scan.timestamp.toFormattedDate(),
-                        qrType = scan.qrType,
-                        rawValue = scan.rawValue
-                    )
+                Text(
+                    text = "Recent Scan's",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+
+                TextButton(
+                    onClick = {
+                        showClearHistoryDialog = true
+                    },
+                    enabled = scansList.isNotEmpty()
+                ) {
+                    Text(text = "Clear All", color = MaterialTheme.colorScheme.onErrorContainer)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            if(scansList.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(items = scansList) { scan ->
+                        ScanHistoryItem(
+                            onItemClick = {},
+                            onDeleteClick = {
+                                viewModel.deleteScannedQr(scan.id)
+                            },
+                            timestamp = scan.timestamp,
+                            qrType = scan.qrType,
+                            rawValue = scan.rawValue
+                        )
+                    }
+                }
+            }
+            else{
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No Scan History!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 20.sp
+                    )
+                }
+            }
         }
-
     }
-}
-fun Long.toFormattedDate(): String {
-    val instant = Instant.ofEpochMilli(this)
-    val formatter = ofPattern("MMM dd, yyyy • hh:mm a", Locale.getDefault())
-        .withZone(ZoneId.systemDefault()) // Converts to user's local phone timezone
-
-    return formatter.format(instant)
 }

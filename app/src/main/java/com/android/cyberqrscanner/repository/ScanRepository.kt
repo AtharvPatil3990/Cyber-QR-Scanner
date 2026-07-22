@@ -15,6 +15,14 @@ class ScanRepository(
         return scanDao.insertScanQr(qr = qr)
     }
 
+    suspend fun deleteScannedQr(id: Long){
+        scanDao.deleteScanQr(id)
+    }
+
+    suspend fun clearAllHistory(){
+        scanDao.clearAllHistory()
+    }
+
     fun getScanHist(): Flow<List<ScanQrEntity>>{
         return scanDao.getScanHistory()
     }
